@@ -250,6 +250,8 @@ def get_assignments_by_policy(policy_uuid):
         "data": [dict(assignment) for assignment in assignments]
     }
 
+    
+
 def create_assignment(user_uuid, policy_uuid, timeframe_days): 
     conn, curs = get_conn_curs()
     curs.execute("SELECT uuid FROM users WHERE uuid = ?", (user_uuid,))
@@ -502,6 +504,22 @@ def get_pending_assignments():
         "status": "200",
         "message": "Pending assignments found successfully",
         "data": assignments
+    }
+
+def get_policies_with_assignment_count():
+    conn, curs = get_conn_curs()
+    curs.execute("""
+        SELECT p.*, COUNT(a.uuid) as assignment_count
+        FROM policies p
+        LEFT JOIN assignments a ON p.uuid = a.policy
+        GROUP BY p.uuid
+    """)
+    policies = curs.fetchall()
+    commit_close(conn, curs)
+    return {
+        "status": "200",
+        "message": "Policies with assignment count found successfully",
+        "data": [dict(policy) for policy in policies]
     }
 
 def seed_db():
