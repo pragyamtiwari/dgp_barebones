@@ -1,0 +1,15 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Upgrade User to Admin</h1>
+  <form method="POST">
+    <label for="user">Select User:</label>
+    <select name="user" id="user">
+      {% for user in users %}
+        <option value="{{ user.uuid }}">{{ user.email }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Upgrade</button>
+  </form>
+{% endblock %}

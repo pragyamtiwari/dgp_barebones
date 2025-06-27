@@ -1,0 +1,15 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Demote Admin to User</h1>
+  <form method="POST">
+    <label for="user">Select Admin:</label>
+    <select name="user" id="user">
+      {% for user in users %}
+        <option value="{{ user.uuid }}">{{ user.email }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Demote</button>
+  </form>
+{% endblock %}

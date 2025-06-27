@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from auth import admin_required
-from db import create_policy as write_create_policy, get_policies as read_get_policies, edit_policy as write_edit_policy, get_policy as read_get_policy, delete_policy as write_delete_policy, create_assignment as write_create_assignment, get_pending_assignments as read_get_pending_assignments, delete_assignment as write_delete_assignment, get_users as read_get_users
+from db import create_policy as write_create_policy, get_policies as read_get_policies, edit_policy as write_edit_policy, get_policy as read_get_policy, delete_policy as write_delete_policy, create_assignment as write_create_assignment, get_pending_assignments as read_get_pending_assignments, delete_assignment as write_delete_assignment, get_users as read_get_users, promote_user_to_admin as write_promote_user_to_admin, demote_user_from_admin as write_demote_user_from_admin
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -83,3 +83,33 @@ def create_assignment():
     users = read_get_users()
     policies = read_get_policies()
     return render_template('admin/manage_assignments/create.html', users=users["data"], policies=policies["data"])
+
+@admin.route('/manage_users', methods=['GET'])
+@admin_required
+def manage_users():
+    return render_template('admin/manage_users/hub.html')
+
+@admin.route('/manage_users/promote', methods=['GET', 'POST'])
+@admin_required
+def promote_user():
+    if request.method == 'POST':
+        user_uuid = request.form['user']
+        write_promote_user_to_admin(user_uuid)
+        return redirect(url_for('admin.manage_users'))
+    users = read_get_users()["data"]
+    users = [user for user in users if not user['is_admin']]
+    return render_template('admin/manage_users/promote.html', users=users)
+
+@admin.route('/manage_users/demote', methods=['GET', 'POST'])
+@admin_required
+def demote_user():
+    if request.method == 'POST':
+        user_uuid = request.form['user']
+        admins = read_get_users()["data"]
+        admins = [user for user in admins if user['is_admin']]
+        if len(admins) > 1:
+            write_demote_user_from_admin(user_uuid)
+        return redirect(url_for('admin.manage_users'))
+    users = read_get_users()["data"]
+    users = [user for user in users if user['is_admin']]
+    return render_template('admin/manage_users/demote.html', users=users)
