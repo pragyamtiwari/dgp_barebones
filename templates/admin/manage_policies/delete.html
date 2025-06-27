@@ -1,16 +1,206 @@
 {% extends "base.html" %}
-{% block title %}Delete Policy{% endblock %}
+{% block title %}Delete Policies - Data Governance Portal{% endblock %}
 {% block content %}
-This is the page to delete a policy.
-Note: <b>Deleting a policy also deletes all assignments associated with it.</b>
+<div class="dashboard-header">
+    <h2>Delete Policies</h2>
+    <p>Remove policies and their associated assignments from the system</p>
+</div>
 
-<form method="POST">
-    <select name="policy">
-        {% for policy in policies %}
-            <option value="{{ policy['uuid'] }}">{{ policy['name'] }}</option>
-        {% endfor %}
-    </select>
-    <input type="submit" value="Delete">
+{% if policies %}
+<form method="POST" id="deleteForm">
+    <div class="table-container">
+        <div class="warning-message mb-3">
+            <span class="warning-icon">⚠️</span>
+            <span><strong>Warning:</strong> Deleting policies will permanently remove them and automatically delete ALL associated assignments. This action cannot be undone.</span>
+        </div>
+
+        <div class="bulk-actions">
+            <button type="button" class="bulk-select-btn" onclick="selectAll()">Select All</button>
+            <button type="button" class="bulk-select-btn" onclick="selectNone()">Select None</button>
+            <button type="button" class="bulk-select-btn" onclick="selectUnassigned()">Select Unassigned Only</button>
+            <span class="selected-count" id="selectedCount">0 policies selected</span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAllCheckbox" class="custom-checkbox" 
+                               onchange="toggleAll(this)">
+                    </th>
+                    <th>Policy Name</th>
+                    <th>Description</th>
+                    <th>Document</th>
+                    <th>Assignments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for policy in policies %}
+                <tr>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" name="policies" value="{{ policy['uuid'] }}" 
+                               class="custom-checkbox policy-checkbox" 
+                               data-assignments="{{ policy.get('assignment_count', 0) }}"
+                               data-name="{{ policy['name'] }}"
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td>
+                        <div style="font-weight: 500;">{{ policy['name'] }}</div>
+                    </td>
+                    <td>
+                        <div style="color: #666; font-size: 0.9rem;">
+                            {{ policy['description'][:80] }}{% if policy['description']|length > 80 %}...{% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if policy['pdf_link'] %}
+                        <a href="{{ policy['pdf_link'] }}" target="_blank" class="policy-link" style="color: #3b5998; text-decoration: none;">
+                            📄 View
+                        </a>
+                        {% else %}
+                        <span style="color: #aaa;">No document</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set count = policy.get('assignment_count', 0) %}
+                        <span class="status-badge {{ 'status-completed' if count == 0 else 'status-pending' }}">
+                            {{ count }} assignment{{ 's' if count != 1 else '' }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="action-buttons mt-3" style="display: flex; justify-content: space-between;">
+            <a href="{{ url_for('admin.manage_policies') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger" id="submitBtn" disabled>
+                Delete Selected Policies
+            </button>
+        </div>
+    </div>
 </form>
+{% else %}
+<div class="table-container">
+    <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <p class="empty-state-text">No policies found to delete.</p>
+        <a href="{{ url_for('admin.manage_policies') }}" class="btn btn-secondary mt-3">
+            Back to Policies
+        </a>
+    </div>
+</div>
+{% endif %}
 
+<script>
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.policy-checkbox:checked');
+        const count = checkboxes.length;
+        const countElement = document.getElementById('selectedCount');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Calculate total assignments that will be affected
+        let totalAssignments = 0;
+        checkboxes.forEach(checkbox => {
+            totalAssignments += parseInt(checkbox.dataset.assignments || 0);
+        });
+        
+        let countText = `${count} polic${count !== 1 ? 'ies' : 'y'} selected`;
+        if (totalAssignments > 0) {
+            countText += ` (${totalAssignments} assignment${totalAssignments !== 1 ? 's' : ''} will be deleted)`;
+        }
+        
+        countElement.textContent = countText;
+        submitBtn.disabled = count === 0;
+        
+        // Update the select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.policy-checkbox');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        if (count === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (count === allCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    function toggleAll(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.policy-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = masterCheckbox.checked;
+        });
+        updateSelectedCount();
+    }
+
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.policy-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    }
+
+    function selectNone() {
+        const checkboxes = document.querySelectorAll('.policy-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    function selectUnassigned() {
+        const checkboxes = document.querySelectorAll('.policy-checkbox');
+        checkboxes.forEach(checkbox => {
+            const assignmentCount = parseInt(checkbox.dataset.assignments || 0);
+            checkbox.checked = assignmentCount === 0;
+        });
+        updateSelectedCount();
+    }
+
+    // Initialize the selected count on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedCount();
+    });
+
+    // Form submission handling
+    document.getElementById('deleteForm')?.addEventListener('submit', function(e) {
+        const selectedPolicies = document.querySelectorAll('.policy-checkbox:checked');
+        if (selectedPolicies.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one policy to delete.');
+            return false;
+        }
+        
+        // Calculate total assignments that will be affected
+        let totalAssignments = 0;
+        let policyNames = [];
+        selectedPolicies.forEach(checkbox => {
+            totalAssignments += parseInt(checkbox.dataset.assignments || 0);
+            policyNames.push(checkbox.dataset.name);
+        });
+        
+        // Create confirmation message
+        const count = selectedPolicies.length;
+        let confirmMessage = `Are you sure you want to delete ${count} polic${count !== 1 ? 'ies' : 'y'}?\n\n`;
+        
+        if (count <= 3) {
+            confirmMessage += `Policies: ${policyNames.join(', ')}\n\n`;
+        }
+        
+        if (totalAssignments > 0) {
+            confirmMessage += `This will also delete ${totalAssignments} assignment${totalAssignments !== 1 ? 's' : ''} associated with ${count !== 1 ? 'these policies' : 'this policy'}.\n\n`;
+        }
+        
+        confirmMessage += 'This action cannot be undone.';
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
 {% endblock %}

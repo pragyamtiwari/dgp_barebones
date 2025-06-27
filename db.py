@@ -239,6 +239,17 @@ def delete_policy(uuid):
         "data": None
         }
 
+def get_assignments_by_policy(policy_uuid):
+    conn, curs = get_conn_curs()
+    curs.execute("SELECT * FROM assignments WHERE policy = ?", (policy_uuid,))
+    assignments = curs.fetchall()
+    commit_close(conn, curs)
+    return {
+        "status": "200",
+        "message": "Assignments found successfully",
+        "data": [dict(assignment) for assignment in assignments]
+    }
+
 def create_assignment(user_uuid, policy_uuid, timeframe_days): 
     conn, curs = get_conn_curs()
     curs.execute("SELECT uuid FROM users WHERE uuid = ?", (user_uuid,))

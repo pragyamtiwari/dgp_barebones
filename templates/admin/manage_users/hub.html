@@ -1,7 +1,31 @@
 {% extends "base.html" %}
-
+{% block title %}Manage Users - Data Governance Portal{% endblock %}
 {% block content %}
-  <h1>Manage Users</h1>
-  <a href="{{ url_for('admin.promote_user') }}">Promote User</a>
-  <a href="{{ url_for('admin.demote_user') }}">Demote User</a>
+<div class="dashboard-header">
+    <h2>Manage Users</h2>
+    <p>Control user roles and permissions within the system</p>
+</div>
+
+<div class="dashboard-grid">
+    <a href="{{ url_for('admin.promote_user') }}" class="dashboard-card">
+        <div class="dashboard-card-icon">⬆️</div>
+        <h3>Promote User</h3>
+        <p>Grant administrator privileges to regular users</p>
+    </a>
+    
+    <a href="{{ url_for('admin.demote_user') }}" class="dashboard-card">
+        <div class="dashboard-card-icon">⬇️</div>
+        <h3>Demote Admin</h3>
+        <p>Remove administrator privileges from current admins</p>
+    </a>
+</div>
+
+<div class="quick-actions mt-4">
+    <h3 class="quick-actions-title">Navigation</h3>
+    <div class="quick-actions-buttons">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
 {% endblock %}

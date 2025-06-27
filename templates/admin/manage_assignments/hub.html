@@ -1,27 +1,85 @@
 {% extends "base.html" %}
-{% block title %}Manage Assignments{% endblock %}
+{% block title %}Manage Assignments - Data Governance Portal{% endblock %}
 {% block content %}
-This is the page to manage assignments.
-What would you like to do?
-<ul>
-    <li><a href="{{ url_for('admin.delete_assignment') }}">Delete assignments</a></li>
-    <li><a href="{{ url_for('admin.create_assignment') }}">Assign assignments</a></li>
-</ul>
-<table border="1">
-    <tr>
-        <th>User name</th>
-        <th>Policy Name</th>
-        <th>Assigned At</th>
-        <th>Due By</th>
-    </tr>
-    {% for assignment in assignments %}
-        <tr>
-            <td>{{ assignment["user_name"] }}</td>
-            <td>{{ assignment["policy_name"] }}</td>
-            <td>{{ assignment["assigned_at"] }}</td>
-            <td>{{ assignment["timeframe_seconds"] }}</td>
-        </tr>
-    {% endfor %}
-</table>
+<div class="dashboard-header">
+    <h2>Manage Assignments</h2>
+    <p>View all active assignments and track compliance status</p>
+</div>
 
+<div class="quick-actions">
+    <h3 class="quick-actions-title">Assignment Actions</h3>
+    <div class="quick-actions-buttons">
+        <a href="{{ url_for('admin.create_assignment') }}" class="btn btn-action">
+            + Create Assignment
+        </a>
+        <a href="{{ url_for('admin.delete_assignment') }}" class="btn btn-danger">
+            Delete Assignments
+        </a>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="table-container">
+    {% if assignments %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Policy</th>
+                <th>Status</th>
+                <th>Assigned Date</th>
+                <th>Due Date</th>
+                <th>Time Remaining</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for assignment in assignments %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ assignment["user_name"] }}</div>
+                </td>
+                <td>{{ assignment["policy_name"] }}</td>
+                <td>
+                    {% if assignment["completed_at"] %}
+                        <span class="status-badge status-completed">Completed</span>
+                    {% else %}
+                        {% set time_left = (assignment["assigned_at"] + assignment["timeframe_seconds"]) - now %}
+                        {% if time_left < 0 %}
+                            <span class="status-badge status-overdue">Overdue</span>
+                        {% else %}
+                            <span class="status-badge status-pending">Pending</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>{{ assignment["assigned_at"] | timestamp_to_date }}</td>
+                <td>
+                    {{ (assignment["assigned_at"] + assignment["timeframe_seconds"]) | timestamp_to_date }}
+                </td>
+                <td>
+                    {% if not assignment["completed_at"] %}
+                        {% set time_left = (assignment["assigned_at"] + assignment["timeframe_seconds"]) - now %}
+                        {% if time_left > 0 %}
+                            {{ (time_left / 86400) | round | int }} days
+                        {% else %}
+                            <span style="color: #dc3545; font-weight: 500;">
+                                {{ ((time_left / 86400) | abs | round | int) }} days overdue
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span style="color: #28a745;">✓ Completed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <p class="empty-state-text">No assignments found. Create a new assignment to get started.</p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

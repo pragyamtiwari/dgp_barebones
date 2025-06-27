@@ -1,13 +1,43 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Admin Dashboard - Data Governance Portal{% endblock %}
 {% block content %}
-<p>{{ session["user"]["name"] }}, you are logged in as an administrator.</p>
-<strong>This is your dashboard.</strong>
-<p>What would you like to do?</p>
-<ul>
-    <li><a href="{{ url_for('admin.manage_policies') }}">Manage policies</a></li>
-    <li><a href="{{ url_for('admin.manage_assignments') }}">Manage assignments</a></li>
-    <li><a href="{{ url_for('admin.manage_users') }}">Manage users</a></li>
-    <li><a href="{{ url_for('admin.choice') }}">Back to choice</a></li>
-</ul>
+<div class="dashboard-header">
+    <h2>Administrator Dashboard</h2>
+    <p>Manage policies, assignments, and users from one central location</p>
+</div>
+
+<div class="dashboard-grid">
+    <a href="{{ url_for('admin.manage_policies') }}" class="dashboard-card">
+        <div class="dashboard-card-icon">📋</div>
+        <h3>Manage Policies</h3>
+        <p>Create, edit, and delete compliance policies</p>
+    </a>
+    
+    <a href="{{ url_for('admin.manage_assignments') }}" class="dashboard-card">
+        <div class="dashboard-card-icon">✅</div>
+        <h3>Manage Assignments</h3>
+        <p>Assign policies to users and track attestations</p>
+    </a>
+    
+    <a href="{{ url_for('admin.manage_users') }}" class="dashboard-card">
+        <div class="dashboard-card-icon">👥</div>
+        <h3>Manage Users</h3>
+        <p>Promote or demote user permissions</p>
+    </a>
+</div>
+
+<div class="quick-actions mt-4">
+    <h3 class="quick-actions-title">Quick Actions</h3>
+    <div class="quick-actions-buttons">
+        <a href="{{ url_for('admin.create_policy') }}" class="btn btn-action">
+            + New Policy
+        </a>
+        <a href="{{ url_for('admin.create_assignment') }}" class="btn btn-action">
+            + New Assignment
+        </a>
+        <a href="{{ url_for('admin.choice') }}" class="btn btn-secondary">
+            ← Portal Selection
+        </a>
+    </div>
+</div>
 {% endblock %}

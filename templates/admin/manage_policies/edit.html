@@ -1,18 +1,162 @@
 {% extends "base.html" %}
-{% block title %}Edit Policy{% endblock %}
+{% block title %}Edit Policy - Data Governance Portal{% endblock %}
 {% block content %}
-This is the page to edit a policy.
+<div class="dashboard-header">
+    <h2>Edit Policy</h2>
+    <p>Update existing policy information</p>
+</div>
 
-<form method="POST">
-    <select name="policy">
-        {% for policy in policies %}
-            <option value="{{ policy['uuid'] }}">{{ policy['name'] }}</option>
-        {% endfor %}
-    </select>
-    <input type="text" name="name" placeholder="Policy Name">
-    <input type="text" name="description" placeholder="Policy Description">
-    <input type="text" name="pdf_link" placeholder="Policy PDF Link">
-    <input type="submit" value="Edit">
+<form method="POST" id="editForm">
+    <div class="table-container">
+        <div class="form-group mb-3">
+            <label for="policy" class="form-label">Select Policy to Edit <span style="color: #dc3545;">*</span></label>
+            <select name="policy" id="policy" class="form-input" required onchange="loadPolicyData(this)">
+                <option value="">Choose a policy...</option>
+                {% for policy in policies %}
+                    <option value="{{ policy['uuid'] }}" 
+                            data-name="{{ policy['name'] }}"
+                            data-description="{{ policy['description'] }}"
+                            data-pdf="{{ policy['pdf_link'] }}">
+                        {{ policy['name'] }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="editFields" style="display: none;">
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e9ecef;">
+            
+            <div class="info-message mb-3">
+                💡 <strong>Tip:</strong> Leave fields empty to keep the current values unchanged.
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="name" class="form-label">New Policy Name</label>
+                <input type="text" 
+                       id="name" 
+                       name="name" 
+                       class="form-input" 
+                       placeholder="Enter new name or leave empty to keep current"
+                       maxlength="100">
+                <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                    Current: <span id="currentName" style="font-weight: 500;"></span>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="description" class="form-label">New Policy Description</label>
+                <textarea id="description" 
+                          name="description" 
+                          class="form-input" 
+                          placeholder="Enter new description or leave empty to keep current"
+                          maxlength="500"
+                          rows="4"
+                          style="resize: vertical;"></textarea>
+                <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                    Current: <span id="currentDescription"></span>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="pdf_link" class="form-label">New PDF Document Link</label>
+                <input type="url" 
+                       id="pdf_link" 
+                       name="pdf_link" 
+                       class="form-input" 
+                       placeholder="Enter new URL or leave empty to keep current">
+                <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                    Current: <a id="currentPdf" href="#" target="_blank" style="color: #3b5998;"></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons mt-4" style="display: flex; justify-content: space-between; padding-top: 1.5rem; border-top: 1px solid #e9ecef;">
+            <a href="{{ url_for('admin.manage_policies') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-action" id="submitBtn" disabled>
+                Update Policy
+            </button>
+        </div>
+    </div>
 </form>
 
+<script>
+    function loadPolicyData(selectElement) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const editFields = document.getElementById('editFields');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (selectElement.value) {
+            // Show edit fields
+            editFields.style.display = 'block';
+            submitBtn.disabled = false;
+            
+            // Load current values
+            const currentName = selectedOption.getAttribute('data-name');
+            const currentDescription = selectedOption.getAttribute('data-description');
+            const currentPdf = selectedOption.getAttribute('data-pdf');
+            
+            document.getElementById('currentName').textContent = currentName;
+            document.getElementById('currentDescription').textContent = currentDescription;
+            
+            const pdfLink = document.getElementById('currentPdf');
+            pdfLink.textContent = currentPdf || 'No PDF link';
+            pdfLink.href = currentPdf || '#';
+            
+            // Clear input fields
+            document.getElementById('name').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('pdf_link').value = '';
+        } else {
+            editFields.style.display = 'none';
+            submitBtn.disabled = true;
+        }
+    }
+
+    // Form validation
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        const policySelect = document.getElementById('policy');
+        const newName = document.getElementById('name').value.trim();
+        const newDescription = document.getElementById('description').value.trim();
+        const newPdfLink = document.getElementById('pdf_link').value.trim();
+        
+        if (!policySelect.value) {
+            e.preventDefault();
+            alert('Please select a policy to edit.');
+            return false;
+        }
+        
+        // Check if at least one field has been modified
+        if (!newName && !newDescription && !newPdfLink) {
+            e.preventDefault();
+            alert('Please modify at least one field to update the policy.');
+            return false;
+        }
+        
+        // Validate URL if provided
+        if (newPdfLink) {
+            try {
+                new URL(newPdfLink);
+            } catch (_) {
+                e.preventDefault();
+                alert('Please enter a valid URL for the PDF link.');
+                return false;
+            }
+        }
+        
+        // Get policy name for confirmation
+        const selectedOption = policySelect.options[policySelect.selectedIndex];
+        const policyName = selectedOption.getAttribute('data-name');
+        
+        // Build confirmation message
+        let changes = [];
+        if (newName) changes.push('name');
+        if (newDescription) changes.push('description');
+        if (newPdfLink) changes.push('PDF link');
+        
+        if (!confirm(`Update ${changes.join(', ')} for policy "${policyName}"?`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
 {% endblock %}

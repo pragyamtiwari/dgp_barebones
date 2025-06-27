@@ -3,18 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}DGP3{% endblock %}</title>
+    <title>{% block title %}Data Governance Portal{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    {% block content %}{% endblock %}
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul class=flashes>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
+    {% if session.get('user') %}
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <span class="header-icon">🏛️</span>
+                <h1>Data Governance Portal</h1>
+            </div>
+            <div class="header-right">
+                <span class="welcome-text">Welcome, {{ session['user']['name'] }}</span>
+                <a href="{{ url_for('login') }}" class="sign-out-btn">Sign Out</a>
+            </div>
+        </div>
+    </header>
+    {% endif %}
+    
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flashes">
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     {% endwith %}
 </body>
 </html>

@@ -4,11 +4,15 @@ from db import get_user_pending_assignments as read_get_user_pending_assignments
 from flask import session, request, redirect, url_for
 user = Blueprint('user', __name__, url_prefix='/user')
 
+from time import time
+
 @user.route('/dashboard', methods=['GET'])
 @login_required
 def dashboard():
     user_pending_assignments = read_get_user_pending_assignments(session['user']['uuid'])
-    return render_template('user/dashboard.html', user_pending_assignments=user_pending_assignments["data"])
+    return render_template('user/dashboard.html', 
+                         user_pending_assignments=user_pending_assignments["data"],
+                         now=int(time()))
 
 @user.route('/attest/<assignment_uuid>', methods=['GET', 'POST'])
 @login_required

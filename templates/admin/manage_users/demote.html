@@ -1,15 +1,175 @@
-
 {% extends "base.html" %}
-
+{% block title %}Demote Admin - Data Governance Portal{% endblock %}
 {% block content %}
-  <h1>Demote Admin to User</h1>
-  <form method="POST">
-    <label for="user">Select Admin:</label>
-    <select name="user" id="user">
-      {% for user in users %}
-        <option value="{{ user.uuid }}">{{ user.email }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit">Demote</button>
-  </form>
+<div class="dashboard-header">
+    <h2>Demote Administrator to User</h2>
+    <p>Remove administrative privileges from selected administrators</p>
+</div>
+
+{% if users %}
+<form method="POST" id="demoteForm">
+    <div class="table-container">
+        <div class="warning-message mb-3">
+            <span class="warning-icon">⚠️</span>
+            <span>Demoted administrators will lose access to all administrative functions. At least one administrator must remain in the system.</span>
+        </div>
+
+        <div class="bulk-actions">
+            <button type="button" class="bulk-select-btn" onclick="selectAll()">Select All</button>
+            <button type="button" class="bulk-select-btn" onclick="selectNone()">Select None</button>
+            <span class="selected-count" id="selectedCount">0 admins selected</span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAllCheckbox" class="custom-checkbox" 
+                               onchange="toggleAll(this)">
+                    </th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Current Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" name="users" value="{{ user['uuid'] }}" 
+                               class="custom-checkbox user-checkbox"
+                               {% if users|length == 1 %}disabled title="Cannot demote the last administrator"{% endif %}
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td>
+                        <div style="font-weight: 500;">{{ user['name'] }}</div>
+                        {% if users|length == 1 %}
+                        <div style="color: #dc3545; font-size: 0.85rem;">Last administrator</div>
+                        {% endif %}
+                    </td>
+                    <td style="color: #666;">{{ user['email'] }}</td>
+                    <td>
+                        <span class="role-badge role-admin">Admin</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="action-buttons mt-3" style="display: flex; justify-content: space-between;">
+            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger" id="submitBtn" disabled>
+                Demote Selected Admins
+            </button>
+        </div>
+    </div>
+</form>
+{% else %}
+<div class="table-container">
+    <div class="empty-state">
+        <div class="empty-state-icon">👥</div>
+        <p class="empty-state-text">No administrators found.</p>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary mt-3">
+            Back to User Management
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+        const count = checkboxes.length;
+        const countElement = document.getElementById('selectedCount');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        countElement.textContent = `${count} admin${count !== 1 ? 's' : ''} selected`;
+        
+        // Check if trying to demote all admins
+        const totalAdmins = document.querySelectorAll('.user-checkbox:not(:disabled)').length;
+        const allAdmins = document.querySelectorAll('.user-checkbox').length;
+        
+        if (count === totalAdmins && totalAdmins === allAdmins) {
+            submitBtn.disabled = true;
+            submitBtn.title = "Cannot demote all administrators";
+        } else {
+            submitBtn.disabled = count === 0;
+            submitBtn.title = "";
+        }
+        
+        // Update the select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        if (count === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (count === allCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    function toggleAll(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = masterCheckbox.checked;
+        });
+        updateSelectedCount();
+    }
+
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    }
+
+    function selectNone() {
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    // Initialize the selected count on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedCount();
+        
+        // Disable select all if only one admin exists
+        const enabledCheckboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
+        if (enabledCheckboxes.length === 0) {
+            document.getElementById('selectAllCheckbox').disabled = true;
+        }
+    });
+
+    // Form submission handling
+    document.getElementById('demoteForm')?.addEventListener('submit', function(e) {
+        const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
+        if (selectedUsers.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one administrator to demote.');
+            return false;
+        }
+        
+        // Double-check we're not demoting all admins
+        const totalAdmins = document.querySelectorAll('.user-checkbox').length;
+        if (selectedUsers.length === totalAdmins) {
+            e.preventDefault();
+            alert('Cannot demote all administrators. At least one must remain.');
+            return false;
+        }
+        
+        // Confirm the action
+        const count = selectedUsers.length;
+        if (!confirm(`Are you sure you want to demote ${count} administrator${count !== 1 ? 's' : ''}? They will lose all administrative privileges.`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
 {% endblock %}

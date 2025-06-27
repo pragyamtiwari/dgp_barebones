@@ -1,15 +1,146 @@
-
 {% extends "base.html" %}
-
+{% block title %}Promote User - Data Governance Portal{% endblock %}
 {% block content %}
-  <h1>Upgrade User to Admin</h1>
-  <form method="POST">
-    <label for="user">Select User:</label>
-    <select name="user" id="user">
-      {% for user in users %}
-        <option value="{{ user.uuid }}">{{ user.email }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit">Upgrade</button>
-  </form>
+<div class="dashboard-header">
+    <h2>Promote User to Administrator</h2>
+    <p>Grant administrative privileges to selected users</p>
+</div>
+
+{% if users %}
+<form method="POST" id="promoteForm">
+    <div class="table-container">
+        <div class="info-message mb-3">
+            <strong>ℹ️ Note:</strong> Administrators have full access to manage policies, assignments, and other users.
+        </div>
+
+        <div class="bulk-actions">
+            <button type="button" class="bulk-select-btn" onclick="selectAll()">Select All</button>
+            <button type="button" class="bulk-select-btn" onclick="selectNone()">Select None</button>
+            <span class="selected-count" id="selectedCount">0 users selected</span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAllCheckbox" class="custom-checkbox" 
+                               onchange="toggleAll(this)">
+                    </th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Current Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" name="users" value="{{ user['uuid'] }}" 
+                               class="custom-checkbox user-checkbox"
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td>
+                        <div style="font-weight: 500;">{{ user['name'] }}</div>
+                    </td>
+                    <td style="color: #666;">{{ user['email'] }}</td>
+                    <td>
+                        <span class="role-badge role-user">User</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="action-buttons mt-3" style="display: flex; justify-content: space-between;">
+            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-action" id="submitBtn" disabled>
+                Promote Selected Users
+            </button>
+        </div>
+    </div>
+</form>
+{% else %}
+<div class="table-container">
+    <div class="empty-state">
+        <div class="empty-state-icon">👥</div>
+        <p class="empty-state-text">No regular users available to promote.</p>
+        <p class="mt-2" style="color: #666;">All users already have administrator privileges.</p>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary mt-3">
+            Back to User Management
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+        const count = checkboxes.length;
+        const countElement = document.getElementById('selectedCount');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        countElement.textContent = `${count} user${count !== 1 ? 's' : ''} selected`;
+        submitBtn.disabled = count === 0;
+        
+        // Update the select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.user-checkbox');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        if (count === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (count === allCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    function toggleAll(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = masterCheckbox.checked;
+        });
+        updateSelectedCount();
+    }
+
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    }
+
+    function selectNone() {
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    // Initialize the selected count on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedCount();
+    });
+
+    // Form submission handling
+    document.getElementById('promoteForm')?.addEventListener('submit', function(e) {
+        const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
+        if (selectedUsers.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one user to promote.');
+            return false;
+        }
+        
+        // Confirm the action
+        const count = selectedUsers.length;
+        if (!confirm(`Are you sure you want to promote ${count} user${count !== 1 ? 's' : ''} to administrator? This will grant full system access.`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
 {% endblock %}

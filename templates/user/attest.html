@@ -1,11 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Attest{% endblock %}
+{% block title %}Attest Policy - Data Governance Portal{% endblock %}
 {% block content %}
-<p>Are you sure you want to attest this assignment?</p>
-<p>{{ policy["data"]["name"] }}</p>
-<p>{{ policy["data"]["description"] }}</p>
-<p>{{ policy["data"]["pdf_link"] }}</p>
-<form method="POST">
-    <input type="submit" value="Attest">
-</form>
+<div class="attest-container">
+    <div class="attest-card">
+        <h2>Policy Attestation</h2>
+        <p class="mb-3">Please review the policy details below and confirm your attestation.</p>
+        
+        <div class="policy-details">
+            <h3 class="policy-name">{{ policy["data"]["name"] }}</h3>
+            {% if policy["data"]["description"] %}
+            <p class="policy-description">{{ policy["data"]["description"] }}</p>
+            {% endif %}
+            {% if policy["data"]["pdf_link"] %}
+            <a href="{{ policy['data']['pdf_link'] }}" target="_blank" class="policy-link">
+                📄 View Policy Document
+            </a>
+            {% endif %}
+        </div>
+        
+        <form method="POST">
+            <div class="attest-actions">
+                <button type="submit" class="btn btn-action">
+                    Confirm Attestation
+                </button>
+                <a href="{{ url_for('user.dashboard') }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

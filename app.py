@@ -6,6 +6,8 @@ from auth import authenticate_login as read_authenticate_login
 import admin 
 import user
 
+from datetime import datetime
+
 import os
 from dotenv import load_dotenv
 
@@ -35,6 +37,17 @@ def login():
             return render_template('login.html')
     session.clear()
     return render_template('login.html')
+
+@app.template_filter('timestamp_to_date')
+def timestamp_to_date(timestamp):
+    """Convert timestamp to readable date format"""
+    if timestamp:
+        try:
+            dt = datetime.fromtimestamp(timestamp)
+            return dt.strftime('%b %d, %Y')
+        except (ValueError, TypeError):
+            return 'Invalid Date'
+    return 'N/A'
 
 if __name__ == '__main__':
     init_db()

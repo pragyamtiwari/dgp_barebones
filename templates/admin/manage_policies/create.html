@@ -1,13 +1,100 @@
 {% extends "base.html" %}
-{% block title %}Create Policy{% endblock %}
+{% block title %}Create Policy - Data Governance Portal{% endblock %}
 {% block content %}
-This is the page to create a new policy.
+<div class="dashboard-header">
+    <h2>Create New Policy</h2>
+    <p>Add a new compliance policy to the system</p>
+</div>
 
-<form method="POST">
-    <input type="text" name="name" placeholder="Policy Name" required>
-    <input type="text" name="description" placeholder="Policy Description" required>
-    <input type="text" name="pdf_link" placeholder="Policy PDF Link" required>
-    <input type="submit" value="Create">
+<form method="POST" id="policyForm">
+    <div class="table-container">
+        <div class="info-message mb-3">
+            💡 <strong>Policy Creation Tips:</strong>
+            <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
+                <li>Use clear, descriptive names that employees can easily understand</li>
+                <li>Write concise descriptions that explain the policy's purpose</li>
+                <li>Ensure PDF links are accessible to all users</li>
+            </ul>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="name" class="form-label">Policy Name <span style="color: #dc3545;">*</span></label>
+            <input type="text" 
+                   id="name" 
+                   name="name" 
+                   class="form-input" 
+                   placeholder="e.g., Data Privacy Policy, Code of Conduct" 
+                   required 
+                   maxlength="100">
+            <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                Give your policy a clear, descriptive name
+            </div>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="description" class="form-label">Policy Description <span style="color: #dc3545;">*</span></label>
+            <textarea id="description" 
+                      name="description" 
+                      class="form-input" 
+                      placeholder="Briefly describe what this policy covers and its main objectives..."
+                      required 
+                      maxlength="500"
+                      rows="4"
+                      style="resize: vertical;"></textarea>
+            <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                Provide a brief overview of the policy's purpose and scope
+            </div>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="pdf_link" class="form-label">PDF Document Link <span style="color: #dc3545;">*</span></label>
+            <input type="url" 
+                   id="pdf_link" 
+                   name="pdf_link" 
+                   class="form-input" 
+                   placeholder="https://example.com/documents/policy.pdf" 
+                   required>
+            <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                Enter the direct URL to the policy PDF document
+            </div>
+        </div>
+
+        <div class="action-buttons mt-4" style="display: flex; justify-content: space-between; padding-top: 1.5rem; border-top: 1px solid #e9ecef;">
+            <a href="{{ url_for('admin.manage_policies') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-action">
+                Create Policy
+            </button>
+        </div>
+    </div>
 </form>
 
+<script>
+    // Form validation
+    document.getElementById('policyForm').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const pdfLink = document.getElementById('pdf_link').value.trim();
+        
+        if (!name || !description || !pdfLink) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+            return false;
+        }
+        
+        // Basic URL validation
+        try {
+            new URL(pdfLink);
+        } catch (_) {
+            e.preventDefault();
+            alert('Please enter a valid URL for the PDF link.');
+            return false;
+        }
+        
+        // Confirm creation
+        if (!confirm(`Create policy "${name}"?`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
 {% endblock %}

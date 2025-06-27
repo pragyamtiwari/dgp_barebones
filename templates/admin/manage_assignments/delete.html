@@ -1,16 +1,170 @@
 {% extends "base.html" %}
-{% block title %}Manage Assignments{% endblock %}
+{% block title %}Delete Assignments - Data Governance Portal{% endblock %}
 {% block content %}
-This is the page to delete assignments.
-What would you like to do?
+<div class="dashboard-header">
+    <h2>Delete Assignments</h2>
+    <p>Select assignments to remove from the system</p>
+</div>
 
-<form method="POST">
-    <select name="assignment">
-        {% for assignment in assignments %}
-            <option value="{{ assignment['uuid'] }}">{{ assignment['policy_name'] }}x{{ assignment['user_name'] }}</option>
-        {% endfor %}
-    </select>
-    <input type="submit" value="Delete">
+{% if assignments %}
+<form method="POST" id="deleteForm">
+    <div class="table-container">
+        <div class="warning-message">
+            <span class="warning-icon">⚠️</span>
+            <span>Deleting assignments cannot be undone. Users will lose access to their assigned policies.</span>
+        </div>
+
+        <div class="bulk-actions">
+            <button type="button" class="bulk-select-btn" onclick="selectAll()">Select All</button>
+            <button type="button" class="bulk-select-btn" onclick="selectNone()">Select None</button>
+            <button type="button" class="bulk-select-btn" onclick="selectPending()">Select Pending Only</button>
+            <span class="selected-count" id="selectedCount">0 assignments selected</span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAllCheckbox" class="custom-checkbox" 
+                               onchange="toggleAll(this)">
+                    </th>
+                    <th>User</th>
+                    <th>Policy</th>
+                    <th>Status</th>
+                    <th>Assigned Date</th>
+                    <th>Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assignment in assignments %}
+                <tr>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" name="assignments" value="{{ assignment['uuid'] }}" 
+                               class="custom-checkbox assignment-checkbox" 
+                               data-completed="{{ 'true' if assignment['completed_at'] else 'false' }}"
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td>
+                        <div style="font-weight: 500;">{{ assignment['user_name'] }}</div>
+                    </td>
+                    <td>{{ assignment['policy_name'] }}</td>
+                    <td>
+                        <span class="status-badge {{ 'status-completed' if assignment['completed_at'] else 'status-pending' }}">
+                            {{ 'Completed' if assignment['completed_at'] else 'Pending' }}
+                        </span>
+                    </td>
+                    <td>
+                        {{ assignment['assigned_at']|timestamp_to_date if assignment['assigned_at'] else 'N/A' }}
+                    </td>
+                    <td>
+                        {% if assignment['assigned_at'] and assignment['timeframe_seconds'] %}
+                            {{ (assignment['assigned_at'] + assignment['timeframe_seconds'])|timestamp_to_date }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="action-buttons mt-3" style="display: flex; justify-content: space-between;">
+            <a href="{{ url_for('admin.manage_assignments') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger" id="submitBtn" disabled>
+                Delete Selected Assignments
+            </button>
+        </div>
+    </div>
 </form>
+{% else %}
+<div class="table-container">
+    <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <p class="empty-state-text">No assignments found to delete.</p>
+        <a href="{{ url_for('admin.manage_assignments') }}" class="btn btn-secondary mt-3">
+            Back to Assignments
+        </a>
+    </div>
+</div>
+{% endif %}
 
+<script>
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.assignment-checkbox:checked');
+        const count = checkboxes.length;
+        const countElement = document.getElementById('selectedCount');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        countElement.textContent = `${count} assignment${count !== 1 ? 's' : ''} selected`;
+        submitBtn.disabled = count === 0;
+        
+        // Update the select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.assignment-checkbox');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        if (count === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (count === allCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    function toggleAll(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.assignment-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = masterCheckbox.checked;
+        });
+        updateSelectedCount();
+    }
+
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.assignment-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    }
+
+    function selectNone() {
+        const checkboxes = document.querySelectorAll('.assignment-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    function selectPending() {
+        const checkboxes = document.querySelectorAll('.assignment-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checkbox.dataset.completed === 'false';
+        });
+        updateSelectedCount();
+    }
+
+    // Initialize the selected count on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedCount();
+    });
+
+    // Form submission handling
+    document.getElementById('deleteForm')?.addEventListener('submit', function(e) {
+        const selectedAssignments = document.querySelectorAll('.assignment-checkbox:checked');
+        if (selectedAssignments.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one assignment to delete.');
+            return false;
+        }
+        
+        // Confirm the deletion
+        const count = selectedAssignments.length;
+        if (!confirm(`Are you sure you want to delete ${count} assignment${count !== 1 ? 's' : ''}? This action cannot be undone.`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
 {% endblock %}
