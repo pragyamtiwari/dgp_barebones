@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Create Policy{% endblock %}
+{% block content %}
+This is the page to create a new policy.
+
+<form method="POST">
+    <input type="text" name="name" placeholder="Policy Name" required>
+    <input type="text" name="description" placeholder="Policy Description" required>
+    <input type="text" name="pdf_link" placeholder="Policy PDF Link" required>
+    <input type="submit" value="Create">
+</form>
+
+{% endblock %}

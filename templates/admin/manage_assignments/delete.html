@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Manage Assignments{% endblock %}
+{% block content %}
+This is the page to delete assignments.
+What would you like to do?
+
+<form method="POST">
+    <select name="assignment">
+        {% for assignment in assignments %}
+            <option value="{{ assignment['uuid'] }}">{{ assignment['policy_name'] }}x{{ assignment['user_name'] }}</option>
+        {% endfor %}
+    </select>
+    <input type="submit" value="Delete">
+</form>
+
+{% endblock %}

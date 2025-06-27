@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Attest{% endblock %}
+{% block content %}
+<p>Are you sure you want to attest this assignment?</p>
+<p>{{ policy["data"]["name"] }}</p>
+<p>{{ policy["data"]["description"] }}</p>
+<p>{{ policy["data"]["pdf_link"] }}</p>
+<form method="POST">
+    <input type="submit" value="Attest">
+</form>
+{% endblock %}

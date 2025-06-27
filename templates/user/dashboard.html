@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<p>{{ session["user"]["name"] }}, you are logged in as a user.</p>
+<strong>This is your dashboard.</strong>
+
+<table border="1">
+    <tr>
+        <th>Policy Name</th>
+        <th>Assigned At</th>
+        <th>Due By</th>
+        <th>Attest</th>
+    </tr>
+    {% for assignment in user_pending_assignments %}
+        <tr>
+            <td>{{ assignment["policy_name"] }}</td>
+            <td>{{ assignment["assigned_at"] }}</td>
+            <td>{{ assignment["timeframe_seconds"] }}</td>
+            <td><a href="{{ url_for('user.attest', assignment_uuid=assignment["uuid"]) }}">Attest</a></td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}

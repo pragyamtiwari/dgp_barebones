@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Create Assignment{% endblock %}
+{% block content %}
+This is the page to create a new assignment.
+
+<form method="POST">
+    <select name="user">
+        {% for user in users %}
+            <option value="{{ user['uuid'] }}">{{ user['name'] }}</option>
+        {% endfor %}
+    </select>
+    <select name="policy">
+        {% for policy in policies %}
+            <option value="{{ policy['uuid'] }}">{{ policy['name'] }}</option>
+        {% endfor %}
+    </select>
+    <input type="number" name="timeframe_days" placeholder="Timeframe (days)" required>
+    <input type="submit" value="Create">
+</form>
+
+{% endblock %}

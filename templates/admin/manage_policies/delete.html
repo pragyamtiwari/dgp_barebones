@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Delete Policy{% endblock %}
+{% block content %}
+This is the page to delete a policy.
+Note: <b>Deleting a policy also deletes all assignments associated with it.</b>
+
+<form method="POST">
+    <select name="policy">
+        {% for policy in policies %}
+            <option value="{{ policy['uuid'] }}">{{ policy['name'] }}</option>
+        {% endfor %}
+    </select>
+    <input type="submit" value="Delete">
+</form>
+
+{% endblock %}

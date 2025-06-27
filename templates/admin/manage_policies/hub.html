@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Manage Policies{% endblock %}
+{% block content %}
+This is the page to manage policies.
+What would you like to do?
+<ul>
+    <li><a href="{{ url_for('admin.create_policy') }}">Create policy</a></li>
+    <li><a href="{{ url_for('admin.edit_policy') }}">Edit policy</a></li>
+    <li><a href="{{ url_for('admin.delete_policy') }}">Delete policy</a></li>
+</ul>
+<table border="1">
+    <tr>
+        <th>Policy Name</th>
+        <th>Policy Description</th>
+        <th>Policy PDF Link</th>
+    </tr>
+    {% for policy in policies %}
+        <tr>
+            <td>{{ policy["name"] }}</td>
+            <td>{{ policy["description"] }}</td>
+            <td>{{ policy["pdf_link"] }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}

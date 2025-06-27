@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Edit Policy{% endblock %}
+{% block content %}
+This is the page to edit a policy.
+
+<form method="POST">
+    <select name="policy">
+        {% for policy in policies %}
+            <option value="{{ policy['uuid'] }}">{{ policy['name'] }}</option>
+        {% endfor %}
+    </select>
+    <input type="text" name="name" placeholder="Policy Name">
+    <input type="text" name="description" placeholder="Policy Description">
+    <input type="text" name="pdf_link" placeholder="Policy PDF Link">
+    <input type="submit" value="Edit">
+</form>
+
+{% endblock %}
