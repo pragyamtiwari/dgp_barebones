@@ -6,23 +6,31 @@
     <p>Manage policies, assignments, and users from one central location</p>
 </div>
 
+
+
 <div class="dashboard-grid">
     <a href="{{ url_for('admin.manage_policies') }}" class="dashboard-card">
-        <div class="dashboard-card-icon">📋</div>
+        <div class="dashboard-card-icon">
+            <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/clipboard-document-list.svg" alt="Policies" width="50" height="50">
+        </div>
         <h3>Manage Policies</h3>
-        <p>Create, edit, and delete compliance policies</p>
+        <p>Create, edit, and delete policies</p>
     </a>
     
     <a href="{{ url_for('admin.manage_assignments') }}" class="dashboard-card">
-        <div class="dashboard-card-icon">✅</div>
+        <div class="dashboard-card-icon">
+            <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/check-circle.svg" alt="Assignments" width="50" height="50">
+        </div>
         <h3>Manage Assignments</h3>
-        <p>Assign policies to users and track attestations</p>
+        <p>Assign policies to users</p>
     </a>
     
     <a href="{{ url_for('admin.manage_users') }}" class="dashboard-card">
-        <div class="dashboard-card-icon">👥</div>
+        <div class="dashboard-card-icon">
+            <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/users.svg" alt="Users" width="50" height="50">
+        </div>
         <h3>Manage Users</h3>
-        <p>Promote or demote user permissions</p>
+        <p>Manage admin privileges</p>
     </a>
 </div>
 

@@ -1,5 +1,76 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from auth import admin_required
+
+# Define breadcrumb mapping
+BREADCRUMBS_MAP = {
+    'admin.choice': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'}
+    ],
+    'admin.dashboard': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Dashboard', 'endpoint': 'admin.dashboard'}
+    ],
+    'admin.manage_policies': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Policies', 'endpoint': 'admin.manage_policies'}
+    ],
+    'admin.create_policy': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Policies', 'endpoint': 'admin.manage_policies'},
+        {'text': 'Create Policy', 'endpoint': 'admin.create_policy'}
+    ],
+    'admin.edit_policy': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Policies', 'endpoint': 'admin.manage_policies'},
+        {'text': 'Edit Policy', 'endpoint': 'admin.edit_policy'}
+    ],
+    'admin.delete_policy': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Policies', 'endpoint': 'admin.manage_policies'},
+        {'text': 'Delete Policy', 'endpoint': 'admin.delete_policy'}
+    ],
+    'admin.manage_assignments': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Assignments', 'endpoint': 'admin.manage_assignments'}
+    ],
+    'admin.create_assignment': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Assignments', 'endpoint': 'admin.manage_assignments'},
+        {'text': 'Create Assignment', 'endpoint': 'admin.create_assignment'}
+    ],
+    'admin.delete_assignment': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Assignments', 'endpoint': 'admin.manage_assignments'},
+        {'text': 'Delete Assignment', 'endpoint': 'admin.delete_assignment'}
+    ],
+    'admin.manage_users': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Users', 'endpoint': 'admin.manage_users'}
+    ],
+    'admin.promote_user': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Users', 'endpoint': 'admin.manage_users'},
+        {'text': 'Promote User', 'endpoint': 'admin.promote_user'}
+    ],
+    'admin.demote_user': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Users', 'endpoint': 'admin.manage_users'},
+        {'text': 'Demote User', 'endpoint': 'admin.demote_user'}
+    ],
+}
+
+def get_breadcrumbs_for_current_page():
+    endpoint = request.endpoint
+    breadcrumbs_data = BREADCRUMBS_MAP.get(endpoint, [])
+    
+    # Convert endpoint names to URLs
+    formatted_breadcrumbs = []
+    for item in breadcrumbs_data:
+        formatted_breadcrumbs.append({
+            'text': item['text'],
+            'url': url_for(item['endpoint'])
+        })
+    return formatted_breadcrumbs
 from db import (
     create_policy as write_create_policy, 
     get_policies as read_get_policies, 
@@ -252,4 +323,4 @@ def demote_user():
     
     users_result = read_get_users()
     users = [user for user in users_result["data"] if user['is_admin']] if users_result["status"] == "200" else []
-    return render_template('admin/manage_users/demote.html', users=users)
+    return render_template('admin/manage_users/demote.html', users=users, breadcrumbs=get_breadcrumbs_for_current_page())
