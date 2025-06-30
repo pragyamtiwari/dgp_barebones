@@ -27,6 +27,30 @@
         </div>
     </div>
 
+    <!-- Tag Selection Section -->
+    {% if tags %}
+    <div class="table-container mb-3">
+        <h3 style="color: #333; margin-bottom: 1rem; font-size: 1.25rem;">Select by Tags</h3>
+        <div class="info-message mb-3">
+            🏷️ Select tags to automatically include all users in those tags
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            {% for tag in tags %}
+            <label class="tag-selector" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" 
+                       class="tag-checkbox" 
+                       value="{{ tag['uuid'] }}" 
+                       data-members="{{ tag['members'] or '' }}"
+                       onchange="updateUserSelectionFromTags()">
+                <span style="padding: 0.25rem 0.75rem; background: #e0e7ff; color: #4338ca; border-radius: 3px; font-size: 0.9rem;">
+                    {{ tag['name'] }} ({{ tag['member_count'] }} users)
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="table-container">
         <h3 style="color: #333; margin-bottom: 1rem; font-size: 1.25rem;">Select Users</h3>
         
@@ -52,6 +76,7 @@
                     <th>User</th>
                     <th>Email</th>
                     <th>Role</th>
+                    <th>Tags</th>
                 </tr>
             </thead>
             <tbody>
@@ -72,6 +97,17 @@
                             {{ 'Admin' if user['is_admin'] else 'User' }}
                         </span>
                     </td>
+                    <td>
+                        {% if user['tags'] %}
+                            {% for tag in user['tags'] %}
+                                <span style="display: inline-block; padding: 0.15rem 0.5rem; background: #f3f4f6; color: #374151; border-radius: 3px; font-size: 0.75rem; margin-right: 0.25rem;">
+                                    {{ tag['name'] }}
+                                </span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color: #aaa; font-size: 0.85rem;">No tags</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -87,6 +123,29 @@
 </form>
 
 <script>
+    function updateUserSelectionFromTags() {
+        const selectedTags = document.querySelectorAll('.tag-checkbox:checked');
+        const userCheckboxes = document.querySelectorAll('.user-checkbox');
+        
+        // First, uncheck all users
+        userCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Then check users who are in selected tags
+        selectedTags.forEach(tagCheckbox => {
+            const members = tagCheckbox.dataset.members.split(',').filter(m => m);
+            members.forEach(memberUuid => {
+                const userCheckbox = document.querySelector(`.user-checkbox[value="${memberUuid}"]`);
+                if (userCheckbox) {
+                    userCheckbox.checked = true;
+                }
+            });
+        });
+        
+        updateSelectedCount();
+    }
+
     function updateSelectedCount() {
         const checkboxes = document.querySelectorAll('.user-checkbox:checked');
         const count = checkboxes.length;
@@ -130,6 +189,10 @@
     function selectNone() {
         const checkboxes = document.querySelectorAll('.user-checkbox');
         checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        // Also uncheck all tags
+        document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
             checkbox.checked = false;
         });
         updateSelectedCount();

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Edit Tag - Data Governance Portal{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h2>Edit Tag</h2>
+    <p>Update tag information</p>
+</div>
+
+<form method="POST" id="editForm">
+    <div class="table-container">
+        <div class="form-group mb-3">
+            <label for="tag" class="form-label">Select Tag to Edit <span style="color: #dc3545;">*</span></label>
+            <select name="tag" id="tag" class="form-input" required onchange="loadTagData(this)">
+                <option value="">Choose a tag...</option>
+                {% for tag in tags %}
+                    <option value="{{ tag['uuid'] }}" 
+                            data-name="{{ tag['name'] }}"
+                            data-description="{{ tag['description'] or '' }}">
+                        {{ tag['name'] }} ({{ tag['member_count'] }} members)
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="editFields" style="display: none;">
+            <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e9ecef;">
+            
+            <div class="info-message mb-3">
+                💡 <strong>Tip:</strong> Leave fields empty to keep the current values unchanged.
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="name" class="form-label">New Tag Name</label>
+                <input type="text" 
+                       id="name" 
+                       name="name" 
+                       class="form-input" 
+                       placeholder="Enter new name or leave empty to keep current"
+                       maxlength="50">
+                <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                    Current: <span id="currentName" style="font-weight: 500;"></span>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="description" class="form-label">New Description</label>
+                <textarea id="description" 
+                          name="description" 
+                          class="form-input" 
+                          placeholder="Enter new description or leave empty to keep current"
+                          maxlength="200"
+                          rows="3"
+                          style="resize: vertical;"></textarea>
+                <div class="form-help" style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                    Current: <span id="currentDescription"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons mt-4" style="display: flex; justify-content: space-between; padding-top: 1.5rem; border-top: 1px solid #e9ecef;">
+            <a href="{{ url_for('admin.manage_tags') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-action" id="submitBtn" disabled>
+                Update Tag
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+    function loadTagData(selectElement) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const editFields = document.getElementById('editFields');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (selectElement.value) {
+            editFields.style.display = 'block';
+            submitBtn.disabled = false;
+            
+            const currentName = selectedOption.getAttribute('data-name');
+            const currentDescription = selectedOption.getAttribute('data-description');
+            
+            document.getElementById('currentName').textContent = currentName;
+            document.getElementById('currentDescription').textContent = currentDescription || 'No description';
+            
+            document.getElementById('name').value = '';
+            document.getElementById('description').value = '';
+        } else {
+            editFields.style.display = 'none';
+            submitBtn.disabled = true;
+        }
+    }
+
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        const tagSelect = document.getElementById('tag');
+        const newName = document.getElementById('name').value.trim();
+        const newDescription = document.getElementById('description').value.trim();
+        
+        if (!tagSelect.value) {
+            e.preventDefault();
+            alert('Please select a tag to edit.');
+            return false;
+        }
+        
+        if (!newName && !newDescription) {
+            e.preventDefault();
+            alert('Please modify at least one field to update the tag.');
+            return false;
+        }
+        
+        const selectedOption = tagSelect.options[tagSelect.selectedIndex];
+        const tagName = selectedOption.getAttribute('data-name');
+        
+        if (!confirm(`Update tag "${tagName}"?`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Manage Tag Members - Data Governance Portal{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h2>Manage Tag Members</h2>
+    <p>Add or remove users from tag: <strong>{{ tag_info['name'] }}</strong></p>
+</div>
+
+<div class="info-message mb-3">
+    <strong>Tag Description:</strong> {{ tag_info['description'] or 'No description provided' }}
+</div>
+
+<form method="POST" id="manageMembersForm">
+    <div class="table-container">
+        <div class="bulk-actions">
+            <button type="button" class="bulk-select-btn" onclick="selectAll()">Select All</button>
+            <button type="button" class="bulk-select-btn" onclick="selectNone()">Select None</button>
+            <button type="button" class="bulk-select-btn" onclick="selectCurrent()">Select Current Members</button>
+            <button type="button" class="bulk-select-btn" onclick="selectNonMembers()">Select Non-Members</button>
+            <span class="selected-count" id="selectedCount">0 users selected</span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAllCheckbox" class="custom-checkbox" 
+                               onchange="toggleAll(this)">
+                    </th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Member Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" 
+                               name="users" 
+                               value="{{ user['uuid'] }}" 
+                               class="custom-checkbox user-checkbox" 
+                               data-member="{{ 'true' if user['is_member'] else 'false' }}"
+                               {% if user['is_member'] %}checked{% endif %}
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td>
+                        <div style="font-weight: 500;">{{ user['name'] }}</div>
+                    </td>
+                    <td style="color: #666;">{{ user['email'] }}</td>
+                    <td>
+                        <span class="role-badge {{ 'role-admin' if user['is_admin'] else 'role-user' }}">
+                            {{ 'Admin' if user['is_admin'] else 'User' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user['is_member'] %}
+                            <span class="status-badge status-completed">Member</span>
+                        {% else %}
+                            <span class="status-badge" style="background: #f3f4f6; color: #6b7280;">Not Member</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="action-buttons mt-3" style="display: flex; justify-content: space-between;">
+            <a href="{{ url_for('admin.manage_tags') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-action">
+                Update Members
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+        const count = checkboxes.length;
+        document.getElementById('selectedCount').textContent = `${count} user${count !== 1 ? 's' : ''} selected`;
+        
+        // Update select all checkbox
+        const allCheckboxes = document.querySelectorAll('.user-checkbox');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        if (count === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (count === allCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    function toggleAll(masterCheckbox) {
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            checkbox.checked = masterCheckbox.checked;
+        });
+        updateSelectedCount();
+    }
+
+    function selectAll() {
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    }
+
+    function selectNone() {
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    function selectCurrent() {
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            checkbox.checked = checkbox.dataset.member === 'true';
+        });
+        updateSelectedCount();
+    }
+
+    function selectNonMembers() {
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            checkbox.checked = checkbox.dataset.member === 'false';
+        });
+        updateSelectedCount();
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedCount();
+    });
+
+    // Form submission
+    document.getElementById('manageMembersForm').addEventListener('submit', function(e) {
+        if (!confirm('Update tag membership?')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
+{% endblock %}

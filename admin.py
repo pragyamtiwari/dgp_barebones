@@ -57,6 +57,15 @@ BREADCRUMBS_MAP = {
         {'text': 'Manage Users', 'endpoint': 'admin.manage_users'},
         {'text': 'Demote User', 'endpoint': 'admin.demote_user'}
     ],
+    'admin.manage_tags': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Tags', 'endpoint': 'admin.manage_tags'}
+    ],
+    'admin.create_tag': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Tags', 'endpoint': 'admin.manage_tags'},
+        {'text': 'Create Tag', 'endpoint': 'admin.create_tag'}
+    ],
 }
 
 def get_breadcrumbs_for_current_page():
@@ -71,6 +80,7 @@ def get_breadcrumbs_for_current_page():
             'url': url_for(item['endpoint'])
         })
     return formatted_breadcrumbs
+
 from db import (
     create_policy as write_create_policy, 
     get_policies as read_get_policies, 
@@ -81,9 +91,22 @@ from db import (
     get_pending_assignments as read_get_pending_assignments, 
     delete_assignment as write_delete_assignment, 
     get_users as read_get_users, 
+    get_user as read_get_user,
     promote_user_to_admin as write_promote_user_to_admin, 
     demote_user_from_admin as write_demote_user_from_admin,
-    get_policies_with_assignment_count
+    get_policies_with_assignment_count,
+    get_all_pending_assignments_with_status,
+    get_user_assignment_logs,
+    create_tag as write_create_tag,
+    get_tags as read_get_tags,
+    get_tag as read_get_tag,
+    delete_tag as write_delete_tag,
+    update_tag_members as write_update_tag_members,
+    add_user_to_tag as write_add_user_to_tag,
+    remove_user_from_tag as write_remove_user_from_tag,
+    get_users_by_tag as read_get_users_by_tag,
+    get_tags_with_member_count,
+    get_users_with_tags
 )
 from time import time
 
@@ -135,7 +158,165 @@ def choice():
 @admin.route('/dashboard', methods=['GET'])
 @admin_required
 def dashboard():
-    return render_template('admin/dashboard.html')
+    # Get pending assignments with status
+    pending_assignments_result = get_all_pending_assignments_with_status()
+    pending_assignments = pending_assignments_result['data'] if pending_assignments_result['status'] == '200' else []
+    
+    return render_template('admin/dashboard.html', 
+                         pending_assignments=pending_assignments,
+                         now=int(time()))
+
+@admin.route('/user/<user_uuid>/logs', methods=['GET'])
+@admin_required
+def view_user_logs(user_uuid):
+    # Get user info
+    user_result = read_get_user(uuid=user_uuid)
+    if user_result['status'] != '200':
+        flash('User not found.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    # Get user's assignment logs
+    logs_result = get_user_assignment_logs(user_uuid)
+    logs = logs_result['data'] if logs_result['status'] == '200' else []
+    
+    return render_template('admin/user_logs.html',
+                         user_info=user_result['data'],
+                         logs=logs)
+
+@admin.route('/manage_tags', methods=['GET'])
+@admin_required
+def manage_tags():
+    tags_result = get_tags_with_member_count()
+    tags = tags_result['data'] if tags_result['status'] == '200' else []
+    return render_template('admin/manage_tags/hub.html', tags=tags)
+
+@admin.route('/manage_tags/create', methods=['GET', 'POST'])
+@admin_required
+def create_tag():
+    if request.method == 'POST':
+        name = request.form['name'].strip()
+        description = request.form.get('description', '').strip()
+        
+        result = write_create_tag(name, description)
+        if result['status'] == '201':
+            flash(f'Tag "{name}" created successfully!', 'success')
+        else:
+            flash(f'Failed to create tag: {result["message"]}', 'error')
+        
+        return redirect(url_for('admin.manage_tags'))
+    
+    return render_template('admin/manage_tags/create.html')
+
+@admin.route('/manage_tags/<tag_uuid>/members', methods=['GET', 'POST'])
+@admin_required
+def manage_tag_members(tag_uuid):
+    # Get tag info
+    tag_result = read_get_tag(uuid=tag_uuid)
+    if tag_result['status'] != '200':
+        flash('Tag not found.', 'error')
+        return redirect(url_for('admin.manage_tags'))
+    
+    tag_info = tag_result['data']
+    
+    if request.method == 'POST':
+        # Get current members
+        current_members = set(tag_info['members'].split(',')) if tag_info['members'] else set()
+        
+        # Get selected users
+        selected_users = set(request.form.getlist('users'))
+        
+        # Determine which users to add and remove
+        users_to_add = selected_users - current_members
+        users_to_remove = current_members - selected_users
+        
+        # Process additions
+        for user_uuid in users_to_add:
+            write_add_user_to_tag(tag_uuid, user_uuid)
+        
+        # Process removals
+        for user_uuid in users_to_remove:
+            write_remove_user_from_tag(tag_uuid, user_uuid)
+        
+        flash(f'Tag membership updated successfully!', 'success')
+        return redirect(url_for('admin.manage_tags'))
+    
+    # Get all users with membership status
+    all_users_result = read_get_users()
+    if all_users_result['status'] != '200':
+        flash('Could not retrieve users.', 'error')
+        return redirect(url_for('admin.manage_tags'))
+    
+    current_members = set(tag_info['members'].split(',')) if tag_info['members'] else set()
+    
+    users = []
+    for user in all_users_result['data']:
+        user_dict = dict(user)
+        user_dict['is_member'] = user['uuid'] in current_members
+        users.append(user_dict)
+    
+    return render_template('admin/manage_tags/manage_members.html',
+                         tag_info=tag_info,
+                         users=users)
+
+@admin.route('/manage_tags/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_tag():
+    if request.method == 'POST':
+        tag_uuid = request.form['tag']
+        new_name = request.form.get('name', '').strip()
+        new_description = request.form.get('description', '').strip()
+        
+        # Get current tag data
+        tag_result = read_get_tag(uuid=tag_uuid)
+        if tag_result['status'] != '200':
+            flash('Tag not found.', 'error')
+            return redirect(url_for('admin.manage_tags'))
+        
+        current_tag = tag_result['data']
+        
+        # Use new values or keep current ones
+        final_name = new_name if new_name else current_tag['name']
+        final_description = new_description if new_description else current_tag['description']
+        
+        result = write_update_tag_members(tag_uuid, name=final_name, description=final_description)
+        if result['status'] == '200':
+            flash('Tag updated successfully!', 'success')
+        else:
+            flash(f'Failed to update tag: {result["message"]}', 'error')
+        
+        return redirect(url_for('admin.manage_tags'))
+    
+    tags_result = get_tags_with_member_count()
+    tags = tags_result['data'] if tags_result['status'] == '200' else []
+    return render_template('admin/manage_tags/edit.html', tags=tags)
+
+@admin.route('/manage_tags/delete', methods=['GET', 'POST'])
+@admin_required
+def delete_tag():
+    if request.method == 'POST':
+        selected_tags = request.form.getlist('tags')
+        
+        successful_deletions = 0
+        failed_deletions = []
+        
+        for tag_uuid in selected_tags:
+            result = write_delete_tag(tag_uuid)
+            if result['status'] == '200':
+                successful_deletions += 1
+            else:
+                failed_deletions.append(result['message'])
+        
+        if successful_deletions > 0:
+            flash(f'Successfully deleted {successful_deletions} tag{"s" if successful_deletions != 1 else ""}!', 'success')
+        
+        for error in failed_deletions:
+            flash(f'Failed to delete tag: {error}', 'error')
+        
+        return redirect(url_for('admin.manage_tags'))
+    
+    tags_result = get_tags_with_member_count()
+    tags = tags_result['data'] if tags_result['status'] == '200' else []
+    return render_template('admin/manage_tags/delete.html', tags=tags)
 
 @admin.route('/manage_policies', methods=['GET'])
 @admin_required
@@ -268,7 +449,7 @@ def create_assignment():
             if result['status'] == '201':
                 successful_assignments += 1
             else:
-                user_info = get_user(uuid=user_uuid)
+                user_info = read_get_user(uuid=user_uuid)
                 user_name = user_info['data']['name'] if user_info['status'] == '200' else 'Unknown User'
                 failed_assignments.append({
                     'user_name': user_name,
@@ -284,11 +465,17 @@ def create_assignment():
         
         return redirect(url_for('admin.manage_assignments'))
     
-    users = read_get_users()
+    # Get users with their tags
+    users_result = get_users_with_tags()
+    users = users_result['data'] if users_result['status'] == '200' else []
+    
     policies = read_get_policies()
+    tags = read_get_tags()
+    
     return render_template('admin/manage_assignments/create.html', 
-                         users=users["data"], 
-                         policies=policies["data"])
+                         users=users, 
+                         policies=policies["data"],
+                         tags=tags["data"])
 
 @admin.route('/manage_users', methods=['GET'])
 @admin_required

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Manage Tags - Data Governance Portal{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h2>Manage Tags</h2>
+    <p>Organize users into groups for bulk operations</p>
+</div>
+
+<div class="quick-actions">
+    <h3 class="quick-actions-title">Tag Actions</h3>
+    <div class="quick-actions-buttons">
+        <a href="{{ url_for('admin.create_tag') }}" class="btn btn-action">
+            + Create Tag
+        </a>
+        <a href="{{ url_for('admin.edit_tag') }}" class="btn btn-secondary">
+            Edit Tag
+        </a>
+        <a href="{{ url_for('admin.delete_tag') }}" class="btn btn-danger">
+            Delete Tags
+        </a>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="table-container">
+    {% if tags %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Tag Name</th>
+                <th>Description</th>
+                <th>Members</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tag in tags %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ tag["name"] }}</div>
+                </td>
+                <td>
+                    <div style="color: #666; font-size: 0.9rem;">
+                        {{ tag["description"] or "No description" }}
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-pending">
+                        {{ tag["member_count"] }} user{{ 's' if tag["member_count"] != 1 else '' }}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('admin.manage_tag_members', tag_uuid=tag['uuid']) }}" 
+                           class="btn btn-action" 
+                           style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                            Manage Members
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">🏷️</div>
+        <p class="empty-state-text">No tags found. Create your first tag to organize users.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

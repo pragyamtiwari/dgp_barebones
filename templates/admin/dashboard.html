@@ -6,8 +6,6 @@
     <p>Manage policies, assignments, and users from one central location</p>
 </div>
 
-
-
 <div class="dashboard-grid">
     <a href="{{ url_for('admin.manage_policies') }}" class="dashboard-card">
         <div class="dashboard-card-icon">
@@ -32,6 +30,14 @@
         <h3>Manage Users</h3>
         <p>Manage admin privileges</p>
     </a>
+    
+    <a href="{{ url_for('admin.manage_tags') }}" class="dashboard-card">
+        <div class="dashboard-card-icon">
+            <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/tag.svg" alt="Tags" width="50" height="50">
+        </div>
+        <h3>Manage Tags</h3>
+        <p>Organize users with tags</p>
+    </a>
 </div>
 
 <div class="quick-actions mt-4">
@@ -43,9 +49,75 @@
         <a href="{{ url_for('admin.create_assignment') }}" class="btn btn-action">
             + New Assignment
         </a>
+        <a href="{{ url_for('admin.create_tag') }}" class="btn btn-action">
+            + New Tag
+        </a>
         <a href="{{ url_for('admin.choice') }}" class="btn btn-secondary">
             ← Portal Selection
         </a>
     </div>
 </div>
+
+
+<!-- Overdue and Pending Attestations Table -->
+<div class="table-container mb-4">
+    <h3 style="color: #333; margin-bottom: 1rem; font-size: 1.25rem;">Attestation Overview</h3>
+    
+    {% if pending_assignments %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Policy</th>
+                <th>Status</th>
+                <th>Assigned Date</th>
+                <th>Due Date</th>
+                <th>Time Remaining</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for assignment in pending_assignments %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ assignment["user_name"] }}</div>
+                </td>
+                <td>{{ assignment["policy_name"] }}</td>
+                <td>
+                    {% if assignment["status"] == "overdue" %}
+                        <span class="status-badge status-overdue">Overdue</span>
+                    {% else %}
+                        <span class="status-badge status-pending">Pending</span>
+                    {% endif %}
+                </td>
+                <td>{{ assignment["assigned_at"] | timestamp_to_date }}</td>
+                <td>{{ assignment["due_date"] | timestamp_to_date }}</td>
+                <td>
+                    {% set time_left = assignment["due_date"] - now %}
+                    {% if time_left > 0 %}
+                        {{ (time_left / 86400) | round | int }} days
+                    {% else %}
+                        <span style="color: #dc3545; font-weight: 500;">
+                            {{ ((time_left / 86400) | abs | round | int) }} days overdue
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin.view_user_logs', user_uuid=assignment['user']) }}" 
+                       class="btn btn-secondary" 
+                       style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                        View Logs
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-state-text">No pending or overdue attestations at this time.</p>
+    </div>
+    {% endif %}
+</div>
+
 {% endblock %}

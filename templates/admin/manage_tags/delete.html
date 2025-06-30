@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Delete Tags - Data Governance Portal{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h2>Delete Tags</h2>
+    <p>Remove tags from the system</p>
+</div>
+
+{% if tags %}
+<form method="POST" id="deleteForm">
+    <div class="table-container">
+        <div class="warning-message mb-3">
+            <span class="warning-icon">⚠️</span>
+            <span>Deleting tags will remove them permanently. Users will remain unaffected.</span>
+        </div>
+
+        <div class="bulk-actions">
+            <button type="button" class="bulk-select-btn" onclick="selectAll()">Select All</button>
+            <button type="button" class="bulk-select-btn" onclick="selectNone()">Select None</button>
+            <button type="button" class="bulk-select-btn" onclick="selectEmpty()">Select Empty Tags</button>
+            <span class="selected-count" id="selectedCount">0 tags selected</span>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAllCheckbox" class="custom-checkbox" 
+                               onchange="toggleAll(this)">
+                    </th>
+                    <th>Tag Name</th>
+                    <th>Description</th>
+                    <th>Members</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag in tags %}
+                <tr>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" name="tags" value="{{ tag['uuid'] }}" 
+                               class="custom-checkbox tag-checkbox" 
+                               data-members="{{ tag['member_count'] }}"
+                               data-name="{{ tag['name'] }}"
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td>
+                        <div style="font-weight: 500;">{{ tag['name'] }}</div>
+                    </td>
+                    <td>
+                        <div style="color: #666; font-size: 0.9rem;">
+                            {{ tag['description'] or 'No description' }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge {{ 'status-completed' if tag['member_count'] == 0 else 'status-pending' }}">
+                            {{ tag['member_count'] }} member{{ 's' if tag['member_count'] != 1 else '' }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="action-buttons mt-3" style="display: flex; justify-content: space-between;">
+            <a href="{{ url_for('admin.manage_tags') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-danger" id="submitBtn" disabled>
+                Delete Selected Tags
+            </button>
+        </div>
+    </div>
+</form>
+{% else %}
+<div class="table-container">
+    <div class="empty-state">
+        <div class="empty-state-icon">🏷️</div>
+        <p class="empty-state-text">No tags found to delete.</p>
+        <a href="{{ url_for('admin.manage_tags') }}" class="btn btn-secondary mt-3">
+            Back to Tags
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function updateSelectedCount() {
+        const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+        const count = checkboxes.length;
+        const countElement = document.getElementById('selectedCount');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        countElement.textContent = `${count} tag${count !== 1 ? 's' : ''} selected`;
+        submitBtn.disabled = count === 0;
+        
+        // Update select all checkbox
+        const allCheckboxes = document.querySelectorAll('.tag-checkbox');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        if (count === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (count === allCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+
+    function toggleAll(masterCheckbox) {
+        document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
+            checkbox.checked = masterCheckbox.checked;
+        });
+        updateSelectedCount();
+    }
+
+    function selectAll() {
+        document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectedCount();
+    }
+
+    function selectNone() {
+        document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    function selectEmpty() {
+        document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
+            checkbox.checked = parseInt(checkbox.dataset.members) === 0;
+        });
+        updateSelectedCount();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedCount();
+    });
+
+    document.getElementById('deleteForm')?.addEventListener('submit', function(e) {
+        const selectedTags = document.querySelectorAll('.tag-checkbox:checked');
+        if (selectedTags.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one tag to delete.');
+            return false;
+        }
+        
+        const count = selectedTags.length;
+        if (!confirm(`Are you sure you want to delete ${count} tag${count !== 1 ? 's' : ''}?`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
+{% endblock %}

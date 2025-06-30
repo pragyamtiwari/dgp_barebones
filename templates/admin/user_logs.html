@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}User Logs - Data Governance Portal{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h2>User Assignment Logs</h2>
+    <p>Viewing assignment history for: <strong>{{ user_info['name'] }}</strong> ({{ user_info['email'] }})</p>
+</div>
+
+<div class="quick-actions">
+    <h3 class="quick-actions-title">Summary</h3>
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div>
+            <span style="color: #666;">Total Assignments:</span>
+            <strong>{{ logs|length }}</strong>
+        </div>
+        <div>
+            <span style="color: #666;">Completed:</span>
+            <strong style="color: #28a745;">{{ logs|selectattr('status', 'equalto', 'completed')|list|length }}</strong>
+        </div>
+        <div>
+            <span style="color: #666;">Pending:</span>
+            <strong style="color: #ffc107;">{{ logs|selectattr('status', 'equalto', 'pending')|list|length }}</strong>
+        </div>
+        <div>
+            <span style="color: #666;">Overdue:</span>
+            <strong style="color: #dc3545;">{{ logs|selectattr('status', 'equalto', 'overdue')|list|length }}</strong>
+        </div>
+    </div>
+</div>
+
+<div class="table-container">
+    {% if logs %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Policy</th>
+                <th>Status</th>
+                <th>Assigned Date</th>
+                <th>Due Date</th>
+                <th>Completion Date</th>
+                <th>Time to Complete</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ log["policy_name"] }}</div>
+                </td>
+                <td>
+                    {% if log["status"] == "completed" %}
+                        <span class="status-badge status-completed">Completed</span>
+                    {% elif log["status"] == "overdue" %}
+                        <span class="status-badge status-overdue">Overdue</span>
+                    {% else %}
+                        <span class="status-badge status-pending">Pending</span>
+                    {% endif %}
+                </td>
+                <td>{{ log["assigned_at"] | timestamp_to_date }}</td>
+                <td>{{ log["due_date"] | timestamp_to_date }}</td>
+                <td>
+                    {% if log["completed_at"] %}
+                        {{ log["completed_at"] | timestamp_to_date }}
+                    {% else %}
+                        <span style="color: #aaa;">Not completed</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if log["completed_at"] %}
+                        {% set days_to_complete = ((log["completed_at"] - log["assigned_at"]) / 86400) | round | int %}
+                        {{ days_to_complete }} day{{ 's' if days_to_complete != 1 else '' }}
+                    {% else %}
+                        <span style="color: #aaa;">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <p class="empty-state-text">No assignment history found for this user.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="action-buttons mt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+        ← Back to Dashboard
+    </a>
+    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">
+        User Management
+    </a>
+</div>
+{% endblock %}

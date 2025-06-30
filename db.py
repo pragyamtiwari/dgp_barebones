@@ -536,3 +536,286 @@ def seed_db():
     create_assignment(admin_uuid, policy1_uuid, 1)
     create_assignment(user_uuid, policy2_uuid, 2)
     create_assignment(user_uuid, policy3_uuid, 3)
+
+# Add these functions to db.py
+
+def get_all_pending_assignments_with_status():
+    """Get all pending assignments with overdue status calculated"""
+    conn, curs = get_conn_curs()
+    current_time = generate_timestamp()
+    
+    curs.execute("""
+        SELECT a.*, u.name as user_name, p.name as policy_name,
+               CASE 
+                   WHEN a.completed_at IS NOT NULL THEN 'completed'
+                   WHEN (a.assigned_at + a.timeframe_seconds) < ? THEN 'overdue'
+                   ELSE 'pending'
+               END as status,
+               (a.assigned_at + a.timeframe_seconds) as due_date
+        FROM assignments a 
+        JOIN users u ON a.user = u.uuid 
+        JOIN policies p ON a.policy = p.uuid 
+        WHERE a.completed_at IS NULL
+        ORDER BY (a.assigned_at + a.timeframe_seconds) ASC
+    """, (current_time,))
+    
+    assignments = curs.fetchall()
+    commit_close(conn, curs)
+    
+    return {
+        "status": "200",
+        "message": "Assignments found successfully",
+        "data": [dict(assignment) for assignment in assignments]
+    }
+
+def get_user_assignment_logs(user_uuid):
+    """Get all assignments (completed and pending) for a specific user"""
+    conn, curs = get_conn_curs()
+    
+    curs.execute("""
+        SELECT a.*, p.name as policy_name,
+               CASE 
+                   WHEN a.completed_at IS NOT NULL THEN 'completed'
+                   WHEN (a.assigned_at + a.timeframe_seconds) < ? THEN 'overdue'
+                   ELSE 'pending'
+               END as status,
+               (a.assigned_at + a.timeframe_seconds) as due_date
+        FROM assignments a 
+        JOIN policies p ON a.policy = p.uuid 
+        WHERE a.user = ?
+        ORDER BY a.assigned_at DESC
+    """, (generate_timestamp(), user_uuid))
+    
+    assignments = curs.fetchall()
+    commit_close(conn, curs)
+    
+    return {
+        "status": "200",
+        "message": "User assignment logs found successfully",
+        "data": [dict(assignment) for assignment in assignments]
+    }
+
+def get_tag(uuid=None, name=None):
+    """Get a specific tag"""
+    conn, curs = get_conn_curs()
+    if uuid:
+        curs.execute("SELECT * FROM tags WHERE uuid = ?", (uuid,))
+    elif name:
+        curs.execute("SELECT * FROM tags WHERE name = ?", (name,))
+    else:
+        commit_close(conn, curs)
+        return {
+            "status": "400",
+            "message": "Insufficient parameters",
+            "data": None
+        }
+    tag = curs.fetchone()
+    commit_close(conn, curs)
+    if not tag:
+        return {
+            "status": "404",
+            "message": "Tag not found",
+            "data": None
+        }
+    return {
+        "status": "200",
+        "message": "Tag found successfully",
+        "data": dict(tag)
+    }
+
+def get_tags():
+    """Get all tags"""
+    conn, curs = get_conn_curs()
+    curs.execute("SELECT * FROM tags ORDER BY name")
+    tags = curs.fetchall()
+    commit_close(conn, curs)
+    return {
+        "status": "200",
+        "message": "Tags found successfully",
+        "data": [dict(tag) for tag in tags]
+    }
+
+def add_user_to_tag(tag_uuid, user_uuid):
+    """Add a user to a tag"""
+    conn, curs = get_conn_curs()
+    
+    # Check if tag exists
+    curs.execute("SELECT * FROM tags WHERE uuid = ?", (tag_uuid,))
+    tag = curs.fetchone()
+    if not tag:
+        commit_close(conn, curs)
+        return {
+            "status": "404",
+            "message": "Tag not found",
+            "data": None
+        }
+    
+    # Check if user exists
+    curs.execute("SELECT * FROM users WHERE uuid = ?", (user_uuid,))
+    user = curs.fetchone()
+    if not user:
+        commit_close(conn, curs)
+        return {
+            "status": "404",
+            "message": "User not found",
+            "data": None
+        }
+    
+    # Get current members
+    current_members = tag['members'].split(',') if tag['members'] else []
+    
+    # Check if user already in tag
+    if user_uuid in current_members:
+        commit_close(conn, curs)
+        return {
+            "status": "409",
+            "message": "User already in tag",
+            "data": None
+        }
+    
+    # Add user to tag
+    current_members.append(user_uuid)
+    new_members = ','.join(current_members)
+    
+    curs.execute("UPDATE tags SET members = ? WHERE uuid = ?", (new_members, tag_uuid))
+    commit_close(conn, curs)
+    
+    return {
+        "status": "200",
+        "message": "User added to tag successfully",
+        "data": None
+    }
+
+def remove_user_from_tag(tag_uuid, user_uuid):
+    """Remove a user from a tag"""
+    conn, curs = get_conn_curs()
+    
+    # Check if tag exists
+    curs.execute("SELECT * FROM tags WHERE uuid = ?", (tag_uuid,))
+    tag = curs.fetchone()
+    if not tag:
+        commit_close(conn, curs)
+        return {
+            "status": "404",
+            "message": "Tag not found",
+            "data": None
+        }
+    
+    # Get current members
+    current_members = tag['members'].split(',') if tag['members'] else []
+    
+    # Check if user in tag
+    if user_uuid not in current_members:
+        commit_close(conn, curs)
+        return {
+            "status": "404",
+            "message": "User not in tag",
+            "data": None
+        }
+    
+    # Remove user from tag
+    current_members.remove(user_uuid)
+    new_members = ','.join(current_members) if current_members else None
+    
+    curs.execute("UPDATE tags SET members = ? WHERE uuid = ?", (new_members, tag_uuid))
+    commit_close(conn, curs)
+    
+    return {
+        "status": "200",
+        "message": "User removed from tag successfully",
+        "data": None
+    }
+
+def get_users_by_tag(tag_uuid):
+    """Get all users in a specific tag"""
+    conn, curs = get_conn_curs()
+    
+    curs.execute("SELECT members FROM tags WHERE uuid = ?", (tag_uuid,))
+    tag = curs.fetchone()
+    if not tag:
+        commit_close(conn, curs)
+        return {
+            "status": "404",
+            "message": "Tag not found",
+            "data": []
+        }
+    
+    if not tag['members']:
+        commit_close(conn, curs)
+        return {
+            "status": "200",
+            "message": "No users in tag",
+            "data": []
+        }
+    
+    user_uuids = tag['members'].split(',')
+    placeholders = ','.join(['?' for _ in user_uuids])
+    
+    curs.execute(f"SELECT * FROM users WHERE uuid IN ({placeholders})", user_uuids)
+    users = curs.fetchall()
+    commit_close(conn, curs)
+    
+    return {
+        "status": "200",
+        "message": "Users found successfully",
+        "data": [dict(user) for user in users]
+    }
+
+def get_tags_with_member_count():
+    """Get all tags with count of members"""
+    conn, curs = get_conn_curs()
+    
+    curs.execute("""
+        SELECT *, 
+               CASE 
+                   WHEN members IS NULL OR members = '' THEN 0
+                   ELSE LENGTH(members) - LENGTH(REPLACE(members, ',', '')) + 1
+               END as member_count
+        FROM tags
+        ORDER BY name
+    """)
+    
+    tags = curs.fetchall()
+    commit_close(conn, curs)
+    
+    return {
+        "status": "200",
+        "message": "Tags with member count found successfully",
+        "data": [dict(tag) for tag in tags]
+    }
+
+def get_users_with_tags():
+    """Get all users with their associated tags"""
+    conn, curs = get_conn_curs()
+    
+    # Get all users
+    curs.execute("SELECT * FROM users ORDER BY name")
+    users = curs.fetchall()
+    
+    # Get all tags
+    curs.execute("SELECT * FROM tags")
+    tags = curs.fetchall()
+    
+    # Build user data with tags
+    user_data = []
+    for user in users:
+        user_dict = dict(user)
+        user_tags = []
+        
+        for tag in tags:
+            if tag['members'] and user['uuid'] in tag['members'].split(','):
+                user_tags.append({
+                    'uuid': tag['uuid'],
+                    'name': tag['name']
+                })
+        
+        user_dict['tags'] = user_tags
+        user_data.append(user_dict)
+    
+    commit_close(conn, curs)
+    
+    return {
+        "status": "200",
+        "message": "Users with tags found successfully",
+        "data": user_data
+    }
