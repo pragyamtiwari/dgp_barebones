@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Manage Whitelist - Data Governance Portal{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h2>Manage Whitelist</h2>
+    <p>Add or remove emails from the login whitelist</p>
+</div>
+
+<div class="table-container mb-3">
+    <form method="POST">
+        <div class="form-group">
+            <label for="email" class="form-label">Email to Add</label>
+            <div style="display: flex; gap: 0.5rem; max-width: 500px;">
+                <input type="email" id="email" name="email" class="form-input" 
+                       placeholder="Enter email address..." required>
+                <button type="submit" class="btn btn-action">Add to Whitelist</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    <h3 style="color: #333; margin-bottom: 1rem; font-size: 1.25rem;">Whitelisted Emails</h3>
+    {% if whitelist %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in whitelist %}
+            <tr>
+                <td>{{ item.email }}</td>
+                <td>
+                    <a href="{{ url_for('admin.remove_from_whitelist', email=item.email) }}" class="btn btn-danger">Remove</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-state-text">The whitelist is currently empty.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="action-buttons mt-3">
+    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">
+        ← Back to User Management
+    </a>
+</div>
+{% endblock %}

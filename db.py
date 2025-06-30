@@ -47,6 +47,9 @@ def init_db():
         description TEXT,
         members TEXT
         );
+        CREATE TABLE IF NOT EXISTS whitelist(
+        email TEXT UNIQUE NOT NULL PRIMARY KEY
+        );
     """)
     commit_close(conn, curs)
 
@@ -818,4 +821,54 @@ def get_users_with_tags():
         "status": "200",
         "message": "Users with tags found successfully",
         "data": user_data
+    }
+
+def add_to_whitelist(email):
+    """Add an email to the whitelist"""
+    conn, curs = get_conn_curs()
+    curs.execute("SELECT * FROM whitelist WHERE email = ?", (email,))
+    if curs.fetchone():
+        commit_close(conn, curs)
+        return {
+            "status": "409",
+            "message": "Email already in whitelist",
+            "data": None
+        }
+    curs.execute("INSERT INTO whitelist (email) VALUES (?)", (email,))
+    commit_close(conn, curs)
+    return {
+        "status": "201",
+        "message": "Email added to whitelist successfully",
+        "data": None
+    }
+
+def remove_from_whitelist(email):
+    """Remove an email from the whitelist"""
+    conn, curs = get_conn_curs()
+    curs.execute("SELECT * FROM whitelist WHERE email = ?", (email,))
+    if not curs.fetchone():
+        commit_close(conn, curs)
+        return {
+            "status": "404",
+            "message": "Email not found in whitelist",
+            "data": None
+        }
+    curs.execute("DELETE FROM whitelist WHERE email = ?", (email,))
+    commit_close(conn, curs)
+    return {
+        "status": "200",
+        "message": "Email removed from whitelist successfully",
+        "data": None
+    }
+
+def get_whitelist():
+    """Get all emails from the whitelist"""
+    conn, curs = get_conn_curs()
+    curs.execute("SELECT * FROM whitelist ORDER BY email")
+    whitelist = curs.fetchall()
+    commit_close(conn, curs)
+    return {
+        "status": "200",
+        "message": "Whitelist found successfully",
+        "data": [dict(row) for row in whitelist]
     }

@@ -8,15 +8,21 @@
 
 <div class="dashboard-grid">
     <a href="{{ url_for('admin.promote_user') }}" class="dashboard-card">
-        <div class="dashboard-card-icon">⬆️</div>
+        <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/arrow-up.svg" width="50" height="50" alt="Users" style="margin-bottom: 1rem;">
         <h3>Promote User</h3>
         <p>Grant administrator privileges to regular users</p>
     </a>
     
     <a href="{{ url_for('admin.demote_user') }}" class="dashboard-card">
-        <div class="dashboard-card-icon">⬇️</div>
+        <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/arrow-down.svg" width="50" height="50" alt="Users" style="margin-bottom: 1rem;">
         <h3>Demote Admin</h3>
         <p>Remove administrator privileges from current admins</p>
+    </a>
+    
+    <a href="{{ url_for('admin.whitelist') }}" class="dashboard-card">
+        <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/check-circle.svg" width="50" height="50" alt="Users" style="margin-bottom: 1rem;">
+        <h3>Manage Whitelist</h3>
+        <p>Add or remove emails from the login whitelist</p>
     </a>
 </div>
 

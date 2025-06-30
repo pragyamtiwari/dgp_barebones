@@ -57,6 +57,11 @@ BREADCRUMBS_MAP = {
         {'text': 'Manage Users', 'endpoint': 'admin.manage_users'},
         {'text': 'Demote User', 'endpoint': 'admin.demote_user'}
     ],
+    'admin.whitelist': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'Manage Users', 'endpoint': 'admin.manage_users'},
+        {'text': 'Whitelist', 'endpoint': 'admin.whitelist'}
+    ],
     'admin.view_logs_search': [
         {'text': 'Admin Home', 'endpoint': 'admin.choice'},
         {'text': 'View Logs', 'endpoint': 'admin.view_logs_search'}
@@ -115,7 +120,10 @@ from db import (
     remove_user_from_tag as write_remove_user_from_tag,
     get_users_by_tag as read_get_users_by_tag,
     get_tags_with_member_count,
-    get_users_with_tags
+    get_users_with_tags,
+    add_to_whitelist as write_add_to_whitelist,
+    remove_from_whitelist as write_remove_from_whitelist,
+    get_whitelist as read_get_whitelist
 )
 from time import time
 
@@ -535,3 +543,30 @@ def demote_user():
     users_result = read_get_users()
     users = [user for user in users_result["data"] if user['is_admin']] if users_result["status"] == "200" else []
     return render_template('admin/manage_users/demote.html', users=users, breadcrumbs=get_breadcrumbs_for_current_page())
+
+@admin.route('/manage_users/whitelist', methods=['GET', 'POST'])
+@admin_required
+def whitelist():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        if email:
+            result = write_add_to_whitelist(email)
+            if result['status'] == '201':
+                flash(f'Email "{email}" added to whitelist successfully!', 'success')
+            else:
+                flash(f'Failed to add email to whitelist: {result["message"]}', 'error')
+        return redirect(url_for('admin.whitelist'))
+
+    whitelist_result = read_get_whitelist()
+    whitelist = whitelist_result['data'] if whitelist_result['status'] == '200' else []
+    return render_template('admin/manage_users/whitelist.html', whitelist=whitelist)
+
+@admin.route('/manage_users/whitelist/remove/<email>', methods=['GET'])
+@admin_required
+def remove_from_whitelist(email):
+    result = write_remove_from_whitelist(email)
+    if result['status'] == '200':
+        flash(f'Email "{email}" removed from whitelist successfully!', 'success')
+    else:
+        flash(f'Failed to remove email from whitelist: {result["message"]}', 'error')
+    return redirect(url_for('admin.whitelist'))
