@@ -57,6 +57,15 @@ BREADCRUMBS_MAP = {
         {'text': 'Manage Users', 'endpoint': 'admin.manage_users'},
         {'text': 'Demote User', 'endpoint': 'admin.demote_user'}
     ],
+    'admin.view_logs_search': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'View Logs', 'endpoint': 'admin.view_logs_search'}
+    ],
+    'admin.view_user_logs': [
+        {'text': 'Admin Home', 'endpoint': 'admin.choice'},
+        {'text': 'View Logs', 'endpoint': 'admin.view_logs_search'},
+        {'text': 'User Logs', 'endpoint': 'admin.view_user_logs'}
+    ],
     'admin.manage_tags': [
         {'text': 'Admin Home', 'endpoint': 'admin.choice'},
         {'text': 'Manage Tags', 'endpoint': 'admin.manage_tags'}
@@ -165,6 +174,21 @@ def dashboard():
     return render_template('admin/dashboard.html', 
                          pending_assignments=pending_assignments,
                          now=int(time()))
+
+
+@admin.route('/logs', methods=['GET'])
+@admin_required
+def view_logs_search():
+    query = request.args.get('q', '')
+    users_result = get_users_with_tags()
+    users = users_result['data'] if users_result['status'] == '200' else []
+
+    if query:
+        users = [u for u in users if query.lower() in u['name'].lower()]
+
+    return render_template('admin/view_logs_search.html',
+                         users=users,
+                         query=query)
 
 @admin.route('/user/<user_uuid>/logs', methods=['GET'])
 @admin_required

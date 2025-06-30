@@ -38,9 +38,16 @@
         <h3>Manage Tags</h3>
         <p>Organize users with tags</p>
     </a>
+    <a href="{{ url_for('admin.view_logs_search') }}" class="dashboard-card">
+        <div class="dashboard-card-icon">
+            <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/book-open.svg" alt="Logs" width="50" height="50">
+        </div>
+        <h3>View Logs</h3>
+        <p>Search and view user assignment logs</p>
+    </a>
 </div>
 
-<div class="quick-actions mt-4">
+<!-- <div class="quick-actions mt-4">
     <h3 class="quick-actions-title">Quick Actions</h3>
     <div class="quick-actions-buttons">
         <a href="{{ url_for('admin.create_policy') }}" class="btn btn-action">
@@ -56,11 +63,11 @@
             ← Portal Selection
         </a>
     </div>
-</div>
+</div> -->
 
 
 <!-- Overdue and Pending Attestations Table -->
-<div class="table-container mb-4">
+<div class="table-container mb-4" style="margin-top: 30px;">
     <h3 style="color: #333; margin-bottom: 1rem; font-size: 1.25rem;">Attestation Overview</h3>
     
     {% if pending_assignments %}

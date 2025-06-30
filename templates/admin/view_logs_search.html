@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}View Logs - Data Governance Portal{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h2>View User Logs</h2>
+    <p>Search for users to view their assignment history</p>
+</div>
+
+<div class="table-container mb-3">
+    <form method="GET" action="{{ url_for('admin.view_logs_search') }}">
+        <div class="form-group" style="max-width: 500px;">
+            <label for="q" class="form-label">Search by User Name</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="search" id="q" name="q" class="form-input" 
+                       placeholder="Enter user name..." value="{{ query }}">
+                <button type="submit" class="btn btn-action">Search</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="table-container">
+    {% if users %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Tags</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ user['name'] }}</div>
+                </td>
+                <td style="color: #666;">{{ user['email'] }}</td>
+                <td>
+                    <span class="role-badge {{ 'role-admin' if user['is_admin'] else 'role-user' }}">
+                        {{ 'Admin' if user['is_admin'] else 'User' }}
+                    </span>
+                </td>
+                <td>
+                    {% if user['tags'] %}
+                        {% for tag in user['tags'] %}
+                            <span style="display: inline-block; padding: 0.15rem 0.5rem; background: #f3f4f6; color: #374151; border-radius: 3px; font-size: 0.75rem; margin-right: 0.25rem;">
+                                {{ tag['name'] }}
+                            </span>
+                        {% endfor %}
+                    {% else %}
+                        <span style="color: #aaa; font-size: 0.85rem;">No tags</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('admin.view_user_logs', user_uuid=user['uuid']) }}" 
+                       class="btn btn-secondary" 
+                       style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                        View Logs
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p class="empty-state-text">No users found matching your search.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="action-buttons mt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+        ← Back to Dashboard
+    </a>
+</div>
+{% endblock %}

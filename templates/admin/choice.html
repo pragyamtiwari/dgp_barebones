@@ -6,16 +6,24 @@
     
     <div class="portal-grid">
         <a href="{{ url_for('admin.dashboard') }}" class="portal-card">
-            <div class="portal-icon">🏛️</div>
+            <div class="portal-icon">
+                <!-- Building Office Icon for Admin Portal -->
+                <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/building-office.svg" width="50" height="50" alt="Admin Portal">
+            </div>
+
             <h2>Admin Portal</h2>
             <p>Manage policies, users, and monitor compliance</p>
         </a>
         
         <a href="{{ url_for('user.dashboard') }}" class="portal-card">
-            <div class="portal-icon">👤</div>
+            <div class="portal-icon">
+                <!-- User Circle Icon for User Portal -->
+                <img src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/user-circle.svg" width="50" height="50" alt="User Portal">
+            </div>
             <h2>User Portal</h2>
             <p>View and complete your attestations</p>
         </a>
     </div>
+    
 </div>
 {% endblock %}
